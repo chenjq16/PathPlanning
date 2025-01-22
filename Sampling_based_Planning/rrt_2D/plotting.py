@@ -11,7 +11,7 @@ import sys
 sys.path.append(os.path.dirname(os.path.abspath(__file__)) +
                 "/../../Sampling_based_Planning/")
 
-from Sampling_based_Planning.rrt_2D import env
+from rrt_2D import env
 
 
 class Plotting:
@@ -115,3 +115,14 @@ class Plotting:
             plt.plot([x[0] for x in path], [x[1] for x in path], '-r', linewidth=2)
             plt.pause(0.01)
         plt.show()
+
+    @staticmethod
+    def plot_ref(path):
+        plt.plot([x[0] for x in path], [x[1] for x in path], '-b', linewidth=2)
+        plt.pause(0.01)
+
+    def animation_ref(self, nodelist, path, name, ref_path, animation=False):
+        self.plot_grid(name)
+        self.plot_visited(nodelist, animation)
+        self.plot_ref(ref_path)
+        self.plot_path(path)

@@ -1,8 +1,3 @@
-"""
-RRT_star 2D
-@author: huiming zhou
-"""
-
 import os
 import sys
 import math
@@ -23,9 +18,9 @@ class Node:
         self.parent = None
 
 
-class RrtStar:
+class DmpRrtStar:
     def __init__(self, x_start, x_goal, step_len,
-                 goal_sample_rate, search_radius, iter_max):
+                 goal_sample_rate, search_radius, iter_max, ref_path):
         self.s_start = Node(x_start)
         self.s_goal = Node(x_goal)
         self.step_len = step_len
@@ -45,11 +40,21 @@ class RrtStar:
         self.obs_rectangle = self.env.obs_rectangle
         self.obs_boundary = self.env.obs_boundary
 
+        self.ref_path = ref_path
+        ref_len = len(ref_path)
+        print(f"Reference path length: {ref_len}")
+
     def planning(self):
         start_time = time.time()
 
+        p = 1
+
         for k in range(self.iter_max):
-            node_rand = self.generate_random_node(self.goal_sample_rate)
+            if p < len(self.ref_path) - 1 and not self.utils.is_collision(Node(self.ref_path[p-1]), Node(self.ref_path[p])):
+                node_rand = Node(self.ref_path[p])
+                p += 1
+            else:
+                node_rand = self.generate_random_node(self.goal_sample_rate)
             node_near = self.nearest_neighbor(self.vertex, node_rand)
             node_new = self.new_state(node_near, node_rand)
 
@@ -70,7 +75,9 @@ class RrtStar:
         end_time = time.time()
         print(f"Planning time: {end_time - start_time} seconds")
 
-        self.plotting.animation(self.vertex, self.path, "rrt*, N = " + str(self.iter_max))
+        self.plotting.animation(self.vertex, self.path, "dmp_rrt*, N = " + str(self.iter_max))
+        self.plotting.animation_ref(self.vertex, self.path, "dmp_rrt*, N = " + str(self.iter_max), ref_path=self.ref_path)
+
 
     def new_state(self, node_start, node_goal):
         dist, theta = self.get_distance_and_angle(node_start, node_goal)
@@ -183,9 +190,17 @@ def main():
     x_start = (10, 8)  # Starting node
     x_goal = (37, 18)  # Goal node
 
-    rrt_star = RrtStar(x_start, x_goal, 10, 0.10, 20, 2500)
+    # Calculate the increments
+    num_parts = 1000
+    dx = (x_goal[0] - x_start[0]) / num_parts
+    dy = (x_goal[1] - x_start[1]) / num_parts
+
+    # Generate the points
+    ref_path = [(x_start[0] + i * dx, x_start[1] + i * dy) for i in range(num_parts + 1)]
+
+    rrt_star = DmpRrtStar(x_start, x_goal, 10, 0.10, 20, 2500, np.array(ref_path))
     rrt_star.planning()
 
 
 if __name__ == '__main__':
-    main()
+    main()    

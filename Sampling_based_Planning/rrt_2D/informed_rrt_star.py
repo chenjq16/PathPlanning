@@ -12,10 +12,12 @@ import matplotlib.pyplot as plt
 from scipy.spatial.transform import Rotation as Rot
 import matplotlib.patches as patches
 
+import time
+
 sys.path.append(os.path.dirname(os.path.abspath(__file__)) +
                 "/../../Sampling_based_Planning/")
 
-from Sampling_based_Planning.rrt_2D import env, plotting, utils
+from rrt_2D import env, plotting, utils
 
 
 class Node:
@@ -61,6 +63,8 @@ class IRrtStar:
         return theta, cMin, xCenter, C, x_best
 
     def planning(self):
+        start_time = time.time()
+
         theta, dist, x_center, C, x_best = self.init()
         c_best = np.inf
 
@@ -103,6 +107,9 @@ class IRrtStar:
 
             if k % 20 == 0:
                 self.animation(x_center=x_center, c_best=c_best, dist=dist, theta=theta)
+
+        end_time = time.time()
+        print(f"Planning time: {end_time - start_time} seconds")
 
         self.path = self.ExtractPath(x_best)
         self.animation(x_center=x_center, c_best=c_best, dist=dist, theta=theta)
@@ -294,7 +301,7 @@ class IRrtStar:
 
 
 def main():
-    x_start = (18, 8)  # Starting node
+    x_start = (10, 8)  # Starting node
     x_goal = (37, 18)  # Goal node
 
     rrt_star = IRrtStar(x_start, x_goal, 1, 0.10, 12, 1000)
