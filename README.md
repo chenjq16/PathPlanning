@@ -1,5 +1,7 @@
 ## Fork
 
+conda create -n pathplanning python=3.7
+
 pip install scipy==1.5.2
 
 ## Overview
