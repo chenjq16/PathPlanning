@@ -183,7 +183,7 @@ def main():
     x_start = (10, 8)  # Starting node
     x_goal = (37, 18)  # Goal node
 
-    rrt_star = RrtStar(x_start, x_goal, 10, 0.10, 20, 2500)
+    rrt_star = RrtStar(x_start, x_goal, 0.5, 0.05, 20, 5000)
     rrt_star.planning()
 
 

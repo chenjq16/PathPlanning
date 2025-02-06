@@ -25,7 +25,7 @@ class Env:
     @staticmethod
     def obs_rectangle():
         obs_rectangle = [
-            [20, 1, 2, 15],
+            [20, 1, 2, 13],
             [30, 15, 2, 15],
         ]
         return obs_rectangle

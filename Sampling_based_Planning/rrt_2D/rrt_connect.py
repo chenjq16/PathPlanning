@@ -10,6 +10,8 @@ import copy
 import numpy as np
 import matplotlib.pyplot as plt
 
+import time
+
 sys.path.append(os.path.dirname(os.path.abspath(__file__)) +
                 "/../../Sampling_based_Planning/")
 
@@ -44,6 +46,8 @@ class RrtConnect:
         self.obs_boundary = self.env.obs_boundary
 
     def planning(self):
+        start_time = time.time()
+
         for i in range(self.iter_max):
             node_rand = self.generate_random_node(self.s_goal, self.goal_sample_rate)
             node_near = self.nearest_neighbor(self.V1, node_rand)
@@ -69,6 +73,9 @@ class RrtConnect:
                             break
 
                 if self.is_node_same(node_new_prim, node_new):
+                    print("Reached goal: ", i)
+                    end_time = time.time()
+                    print(f"Planning time: {end_time - start_time} seconds")
                     return self.extract_path(node_new, node_new_prim)
 
             if len(self.V2) < len(self.V1):
@@ -143,10 +150,10 @@ class RrtConnect:
 
 
 def main():
-    x_start = (2, 2)  # Starting node
-    x_goal = (49, 24)  # Goal node
+    x_start = (10, 8)  # Starting node
+    x_goal = (37, 18)  # Goal node
 
-    rrt_conn = RrtConnect(x_start, x_goal, 0.8, 0.05, 5000)
+    rrt_conn = RrtConnect(x_start, x_goal, 0.5, 0.05, 5000)
     path = rrt_conn.planning()
 
     rrt_conn.plotting.animation_connect(rrt_conn.V1, rrt_conn.V2, path, "RRT_CONNECT")

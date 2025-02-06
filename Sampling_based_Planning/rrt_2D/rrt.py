@@ -8,6 +8,8 @@ import sys
 import math
 import numpy as np
 
+import time
+
 sys.path.append(os.path.dirname(os.path.abspath(__file__)) +
                 "/../../Sampling_based_Planning/")
 
@@ -41,6 +43,9 @@ class Rrt:
         self.obs_boundary = self.env.obs_boundary
 
     def planning(self):
+
+        start_time = time.time()
+
         for i in range(self.iter_max):
             node_rand = self.generate_random_node(self.goal_sample_rate)
             node_near = self.nearest_neighbor(self.vertex, node_rand)
@@ -52,6 +57,9 @@ class Rrt:
 
                 if dist <= self.step_len and not self.utils.is_collision(node_new, self.s_goal):
                     self.new_state(node_new, self.s_goal)
+                    print("Reached goal: ", i)
+                    end_time = time.time()
+                    print(f"Planning time: {end_time - start_time} seconds")
                     return self.extract_path(node_new)
 
         return None
@@ -98,8 +106,8 @@ class Rrt:
 
 
 def main():
-    x_start = (2, 2)  # Starting node
-    x_goal = (49, 24)  # Goal node
+    x_start = (10, 8)  # Starting node
+    x_goal = (37, 18)  # Goal node
 
     rrt = Rrt(x_start, x_goal, 0.5, 0.05, 10000)
     path = rrt.planning()

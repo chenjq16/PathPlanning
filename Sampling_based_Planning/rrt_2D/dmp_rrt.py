@@ -1,3 +1,8 @@
+"""
+RRT_2D
+@author: huiming zhou
+"""
+
 import os
 import sys
 import math
@@ -8,7 +13,7 @@ import time
 sys.path.append(os.path.dirname(os.path.abspath(__file__)) +
                 "/../../Sampling_based_Planning/")
 
-from rrt_2D import env, plotting, utils, queue
+from rrt_2D import env, plotting, utils
 
 
 class Node:
@@ -18,20 +23,17 @@ class Node:
         self.parent = None
 
 
-class DmpRrtStar:
-    def __init__(self, x_start, x_goal, step_len,
-                 goal_sample_rate, search_radius, iter_max, ref_path):
-        self.s_start = Node(x_start)
-        self.s_goal = Node(x_goal)
+class DmpRrt:
+    def __init__(self, s_start, s_goal, step_len, goal_sample_rate, iter_max, ref_path):
+        self.s_start = Node(s_start)
+        self.s_goal = Node(s_goal)
         self.step_len = step_len
         self.goal_sample_rate = goal_sample_rate
-        self.search_radius = search_radius
         self.iter_max = iter_max
         self.vertex = [self.s_start]
-        self.path = []
 
         self.env = env.Env()
-        self.plotting = plotting.Plotting(x_start, x_goal)
+        self.plotting = plotting.Plotting(s_start, s_goal)
         self.utils = utils.Utils()
 
         self.x_range = self.env.x_range
@@ -43,13 +45,13 @@ class DmpRrtStar:
         self.ref_path = ref_path
         ref_len = len(ref_path)
         print(f"Reference path length: {ref_len}")
-
+        
     def planning(self):
         start_time = time.time()
 
         p = 1
 
-        for k in range(self.iter_max):
+        for i in range(self.iter_max):
             if p < len(self.ref_path):
                 node_rand = Node(self.ref_path[p])
                 if not self.utils.is_inside_obs(node_rand):
@@ -64,10 +66,15 @@ class DmpRrtStar:
                         node_new = self.new_state(node_near, node_rand)
                     
                         dmp_dist, _ = self.get_distance_and_angle(node_new, Node(self.ref_path[p]))
-                        if dmp_dist <= self.step_len and not self.utils.is_collision(node_new, Node(self.ref_path[p])):
+                        if dmp_dist <= self.step_len and not self.utils.is_collision(node_new, Node(self.ref_path[p])) and not self.utils.is_collision(node_near, node_new):
                             p += 1
+                            self.vertex.append(node_new)
+                            node_near = node_rand
+                            node_new = self.new_dmp_state(node_rand, Node(self.ref_path[p]))
                             print("Not inside obstacle, but collision, reached goal")
-                        print("Not inside obstacle, but collision")
+                        else:
+                            print("Not inside obstacle, but collision")
+                        
                 else:
                     p += 1
                     print("Inside obstacle")
@@ -77,26 +84,22 @@ class DmpRrtStar:
                 node_near = self.nearest_neighbor(self.vertex, node_rand)
                 node_new = self.new_state(node_near, node_rand)
 
-            if k % 500 == 0:
-                print(k)
-
             if node_new and not self.utils.is_collision(node_near, node_new):
                 print(p)
-                neighbor_index = self.find_near_neighbor(node_new)
                 self.vertex.append(node_new)
+                dist, _ = self.get_distance_and_angle(node_new, self.s_goal)
 
-                if neighbor_index:
-                    self.choose_parent(node_new, neighbor_index)
-                    self.rewire(node_new, neighbor_index)
-
-        index = self.search_goal_parent()
-        self.path = self.extract_path(self.vertex[index])
-
+                if dist <= self.step_len and not self.utils.is_collision(node_new, self.s_goal):
+                    self.new_state(node_new, self.s_goal)
+                    print("Reached goal: ", i)
+                    end_time = time.time()
+                    print(f"Planning time: {end_time - start_time} seconds")
+                    return self.extract_path(node_new)
+        
         end_time = time.time()
         print(f"Planning time: {end_time - start_time} seconds")
 
-        self.plotting.animation(self.vertex, self.path, "dmp_rrt*, N = " + str(self.iter_max))
-        self.plotting.animation_ref(self.vertex, self.path, "dmp_rrt*, N = " + str(self.iter_max), ref_path=self.ref_path)
+        return None
 
     def new_dmp_state(self, node_start, node_goal):
         dist, theta = self.get_distance_and_angle(node_start, node_goal)
@@ -116,48 +119,8 @@ class DmpRrtStar:
         if np.random.random() > goal_sample_rate:
             return Node((np.random.uniform(self.x_range[0] + delta, self.x_range[1] - delta)*0.3 + dmp_goal.x*0.7,
                          np.random.uniform(self.y_range[0] + delta, self.y_range[1] - delta)*0.3 + dmp_goal.y*0.7))
-        
+
         return dmp_goal
-
-    def new_state(self, node_start, node_goal):
-        dist, theta = self.get_distance_and_angle(node_start, node_goal)
-
-        dist = min(self.step_len, dist)
-        node_new = Node((node_start.x + dist * math.cos(theta),
-                         node_start.y + dist * math.sin(theta)))
-
-        node_new.parent = node_start
-
-        return node_new
-
-    def choose_parent(self, node_new, neighbor_index):
-        cost = [self.get_new_cost(self.vertex[i], node_new) for i in neighbor_index]
-
-        cost_min_index = neighbor_index[int(np.argmin(cost))]
-        node_new.parent = self.vertex[cost_min_index]
-
-    def rewire(self, node_new, neighbor_index):
-        for i in neighbor_index:
-            node_neighbor = self.vertex[i]
-
-            if self.cost(node_neighbor) > self.get_new_cost(node_new, node_neighbor):
-                node_neighbor.parent = node_new
-
-    def search_goal_parent(self):
-        dist_list = [math.hypot(n.x - self.s_goal.x, n.y - self.s_goal.y) for n in self.vertex]
-        node_index = [i for i in range(len(dist_list)) if dist_list[i] <= self.step_len]
-
-        if len(node_index) > 0:
-            cost_list = [dist_list[i] + self.cost(self.vertex[i]) for i in node_index
-                         if not self.utils.is_collision(self.vertex[i], self.s_goal)]
-            return node_index[int(np.argmin(cost_list))]
-
-        return len(self.vertex) - 1
-
-    def get_new_cost(self, node_start, node_end):
-        dist, _ = self.get_distance_and_angle(node_start, node_end)
-
-        return self.cost(node_start) + dist
 
     def generate_random_node(self, goal_sample_rate):
         delta = self.utils.delta
@@ -168,54 +131,28 @@ class DmpRrtStar:
 
         return self.s_goal
 
-    def find_near_neighbor(self, node_new):
-        n = len(self.vertex) + 1
-        r = min(self.search_radius * math.sqrt((math.log(n) / n)), self.step_len)
-
-        dist_table = [math.hypot(nd.x - node_new.x, nd.y - node_new.y) for nd in self.vertex]
-        dist_table_index = [ind for ind in range(len(dist_table)) if dist_table[ind] <= r and
-                            not self.utils.is_collision(node_new, self.vertex[ind])]
-
-        return dist_table_index
-
     @staticmethod
     def nearest_neighbor(node_list, n):
         return node_list[int(np.argmin([math.hypot(nd.x - n.x, nd.y - n.y)
                                         for nd in node_list]))]
 
-    @staticmethod
-    def cost(node_p):
-        node = node_p
-        cost = 0.0
+    def new_state(self, node_start, node_end):
+        dist, theta = self.get_distance_and_angle(node_start, node_end)
 
-        while node.parent:
-            cost += math.hypot(node.x - node.parent.x, node.y - node.parent.y)
-            node = node.parent
+        dist = min(self.step_len, dist)
+        node_new = Node((node_start.x + dist * math.cos(theta),
+                         node_start.y + dist * math.sin(theta)))
+        node_new.parent = node_start
 
-        return cost
-
-    def update_cost(self, parent_node):
-        OPEN = queue.QueueFIFO()
-        OPEN.put(parent_node)
-
-        while not OPEN.empty():
-            node = OPEN.get()
-
-            if len(node.child) == 0:
-                continue
-
-            for node_c in node.child:
-                node_c.Cost = self.get_new_cost(node, node_c)
-                OPEN.put(node_c)
+        return node_new
 
     def extract_path(self, node_end):
-        path = [[self.s_goal.x, self.s_goal.y]]
-        node = node_end
+        path = [(self.s_goal.x, self.s_goal.y)]
+        node_now = node_end
 
-        while node.parent is not None:
-            path.append([node.x, node.y])
-            node = node.parent
-        path.append([node.x, node.y])
+        while node_now.parent is not None:
+            node_now = node_now.parent
+            path.append((node_now.x, node_now.y))
 
         return path
 
@@ -238,9 +175,15 @@ def main():
     # Generate the points
     ref_path = [(x_start[0] + i * dx, x_start[1] + i * dy) for i in range(num_parts + 1)]
 
-    rrt_star = DmpRrtStar(x_start, x_goal, 0.5, 0.05, 20, 5000, np.array(ref_path))
-    rrt_star.planning()
+    rrt = DmpRrt(x_start, x_goal, 0.5, 0.05, 10000, np.array(ref_path))
+    path = rrt.planning()
+
+    if path:
+        rrt.plotting.animation(rrt.vertex, path, "dmp_RRT", True)
+        rrt.plotting.animation_ref(rrt.vertex, path, "dmp_RRT", ref_path=np.array(ref_path))
+    else:
+        print("No Path Found!")
 
 
 if __name__ == '__main__':
-    main()    
+    main()
