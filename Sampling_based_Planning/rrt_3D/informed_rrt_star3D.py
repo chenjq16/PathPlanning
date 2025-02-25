@@ -47,7 +47,7 @@ class IRRT:
         self.x0, self.xt = tuple(self.env.start), tuple(self.env.goal)
         self.Parent = {}
         self.Path = []
-        self.N = 10000 # used for determining how many batches needed
+        self.N = 2500 # used for determining how many batches needed
         self.ind = 0
         self.i = 0
         # rrt* near and other utils
@@ -121,6 +121,8 @@ class IRRT:
             if self.done:
                 self.Path, _ = path(self, Path = [])
             self.ind += 1
+        print('time used = ' + str(time.time()-starttime))
+        plt.show()
         # return tree
         return self.T
                 
@@ -231,4 +233,5 @@ class IRRT:
 
 if __name__ == '__main__':
     A = IRRT(show_ellipse=False)
+    starttime = time.time()
     A.Informed_rrt()

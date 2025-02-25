@@ -13,10 +13,10 @@ import sys
 
 sys.path.append(os.path.dirname(os.path.abspath(__file__)) + "/../../Sampling_based_Planning/")
 from rrt_3D.env3D import env
-from rrt_3D.utils3D import getDist, sampleFree, nearest, steer, isCollide, near, visualization, cost, path
+from rrt_3D.utils3D import getDist, sampleFree, nearest, steer, isCollide, near, visualization, cost, path, isinside, dmp_visualization
 
 
-class rrtstar():
+class dmprrtstar():
     def __init__(self):
         self.env = env()
 
@@ -37,6 +37,9 @@ class rrtstar():
 
         self.V.append(self.x0)
         self.ind = 0
+
+        self.ref_path = []
+
     def wireup(self,x,y):
         # self.E.add_edge([s,y]) # add edge
         self.Parent[x] = y
@@ -58,10 +61,31 @@ class rrtstar():
 
     def run(self):
         xnew = self.x0
-        print('start rrt*... ')
+        print('start dmp_rrt*... ')
         self.fig = plt.figure(figsize = (10,8))
+
+        p = 1
+
         while self.ind < self.maxiter:
-            xrand    = sampleFree(self)
+            if p < len(self.ref_path):
+                x = self.ref_path[p]
+                if not isinside(self, x):
+                    xrand = x
+                    xnearest = nearest(self,xrand)
+                    xnew, dist  = steer(self,xnearest,xrand)
+                    collide, _ = isCollide(self,xnearest,xnew,dist=dist)                    
+                    if not collide:
+                        p += 1
+                        print("Not inside obstacle")
+                    else:
+                        xrand = sampleFree(self)
+                else:
+                    p += 1
+                    print("Inside obstacle")
+                    continue
+
+            else:
+                xrand = sampleFree(self)
             xnearest = nearest(self,xrand)
             xnew, dist  = steer(self,xnearest,xrand)
             collide, _ = isCollide(self,xnearest,xnew,dist=dist)
@@ -69,7 +93,7 @@ class rrtstar():
                 Xnear = near(self,xnew)
                 self.V.append(xnew) # add point
                 visualization(self)
-                plt.title('rrt*')
+                plt.title('dmp_rrt*')
                 # minimal path and minimal cost
                 xmin, cmin = xnearest, cost(self, xnearest) + getDist(xnearest, xnew)
                 # connecting along minimal cost path
@@ -96,12 +120,24 @@ class rrtstar():
         self.reached()
         print('time used = ' + str(time.time()-starttime))
         print('Total distance = '+str(self.D))
-        visualization(self)
+        dmp_visualization(self)
         plt.show()
+
+    def generate_ref(self):
+        # Calculate the increments
+        num_parts = 1000
+        dx = (self.env.goal[0] - self.env.start[0]) / num_parts
+        dy = (self.env.goal[1] - self.env.start[1]) / num_parts
+        dz = (self.env.goal[2] - self.env.start[2]) / num_parts
+
+        # Generate the points
+        self.ref_path = np.array([[self.env.start[0] + i * dx, self.env.start[1] + i * dy, self.env.start[2] + i * dz] for i in range(num_parts + 1)])
+
         
 
 if __name__ == '__main__':
-    p = rrtstar()
+    p = dmprrtstar()
     starttime = time.time()
+    p.generate_ref()
     p.run()
     

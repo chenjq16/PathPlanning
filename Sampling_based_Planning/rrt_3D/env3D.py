@@ -77,7 +77,7 @@ class obb(object):
         self.T = np.vstack([np.column_stack([self.O.T,-self.O.T@self.P]),[0,0,0,1]])
 
 class env():
-    def __init__(self, xmin=0, ymin=0, zmin=0, xmax=20, ymax=20, zmax=5, resolution=1):
+    def __init__(self, xmin=0, ymin=0, zmin=0, xmax=20, ymax=20, zmax=10, resolution=1):
     # def __init__(self, xmin=-5, ymin=0, zmin=-5, xmax=10, ymax=5, zmax=10, resolution=1):  
         self.resolution = resolution
         self.boundary = np.array([xmin, ymin, zmin, xmax, ymax, zmax]) 
@@ -88,7 +88,7 @@ class env():
         self.OBB = np.array([obb([5.0,7.0,2.5],[0.5,2.0,2.5],R_matrix(135,0,0)),
                              obb([12.0,4.0,2.5],[0.5,2.0,2.5],R_matrix(45,0,0))])
         self.start = np.array([2.0, 2.0, 2.0])
-        self.goal = np.array([6.0, 16.0, 0.0])
+        self.goal = np.array([6.0, 16.0, 4.0])
         self.t = 0 # time 
 
     def New_block(self):

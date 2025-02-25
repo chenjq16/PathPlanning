@@ -71,7 +71,7 @@ def draw_obb(ax, OBB, color=None, alpha=0.15):
 
 
 def draw_line(ax, SET, visibility=1, color=None):
-    if SET != []:
+    if len(SET) != 0:
         for i in SET:
             xs = i[0][0], i[1][0]
             ys = i[0][1], i[1][1]
@@ -116,6 +116,54 @@ def visualization(initparams):
         #     ax.scatter3D(V[:, 0], V[:, 1], V[:, 2], s=2, color='g', )
         ax.plot(start[0:1], start[1:2], start[2:], 'go', markersize=7, markeredgecolor='k')
         ax.plot(goal[0:1], goal[1:2], goal[2:], 'ro', markersize=7, markeredgecolor='k')
+        # adjust the aspect ratio
+        ax.dist = 15
+        set_axes_equal(ax)
+        make_transparent(ax)
+        #plt.xlabel('s')
+        #plt.ylabel('y')
+        ax.set_axis_off()
+        plt.pause(0.0001)
+
+def dmp_visualization(initparams):
+    if initparams.ind % 100 == 0 or initparams.done:
+        #----------- list structure
+        # V = np.array(list(initparams.V))
+        # E = initparams.E
+        #----------- end
+        # edges = initparams.E
+        Path = np.array(initparams.Path)
+        start = initparams.env.start
+        goal = initparams.env.goal
+        # edges = E.get_edge()
+        #----------- list structure
+        edges = []
+        for i in initparams.Parent:
+            edges.append([i,initparams.Parent[i]])
+        #----------- end
+        # generate axis objects
+        ax = plt.subplot(111, projection='3d')
+        
+        # ax.view_init(elev=0.+ 0.03*initparams.ind/(2*np.pi), azim=90 + 0.03*initparams.ind/(2*np.pi))
+        # ax.view_init(elev=0., azim=90.)
+        ax.view_init(elev=65., azim=60.)
+        # ax.view_init(elev=-8., azim=180)
+        ax.clear()
+        # drawing objects
+        draw_Spheres(ax, initparams.env.balls)
+        draw_block_list(ax, initparams.env.blocks)
+        if initparams.env.OBB is not None:
+            draw_obb(ax, initparams.env.OBB)
+        draw_block_list(ax, np.array([initparams.env.boundary]), alpha=0)
+        draw_line(ax, edges, visibility=0.75, color='g')
+        draw_line(ax, Path, color='r')
+        # if len(V) > 0:
+        #     ax.scatter3D(V[:, 0], V[:, 1], V[:, 2], s=2, color='g', )
+        ax.plot(start[0:1], start[1:2], start[2:], 'go', markersize=7, markeredgecolor='k')
+        ax.plot(goal[0:1], goal[1:2], goal[2:], 'ro', markersize=7, markeredgecolor='k')
+        
+        ax.plot(initparams.ref_path[:,0], initparams.ref_path[:,1], initparams.ref_path[:,2], 'y')
+        
         # adjust the aspect ratio
         ax.dist = 15
         set_axes_equal(ax)
