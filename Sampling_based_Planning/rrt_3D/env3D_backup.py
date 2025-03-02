@@ -21,12 +21,11 @@ def R_matrix(z_angle,y_angle,x_angle):
 
 def getblocks():
     # AABBs
-    block = [[5.00e+00, 1.00e+01, 0.00e+00, 15.00e+00, 2.00e+01, 1.00e+00],
-             [5.00e+00, 1.00e+01, 1.00e+00, 15.00e+00, 1.05e+01, 6.00e+00],
-             [5.00e+00, 1.95e+01, 1.00e+00, 15.00e+00, 2.00e+01, 6.00e+00],
-             [5.00e+00, 1.00e+01, 1.00e+00, 5.05e+00, 2.00e+01, 6.00e+00],
-             [14.50e+00, 1.00e+01, 1.00e+00, 15.00e+00, 2.00e+01, 6.00e+00]
-             ]
+    block = [[4.00e+00, 1.20e+01, 0.00e+00, 5.00e+00, 2.00e+01, 5.00e+00],
+             [5.5e+00, 1.20e+01, 0.00e+00, 1.00e+01, 1.30e+01, 5.00e+00],
+             [1.00e+01, 1.20e+01, 0.00e+00, 1.40e+01, 1.30e+01, 5.00e+00],
+             [1.00e+01, 9.00e+00, 0.00e+00, 2.00e+01, 1.00e+01, 5.00e+00],
+             [9.00e+00, 6.00e+00, 0.00e+00, 1.00e+01, 1.00e+01, 5.00e+00]]
     Obstacles = []
     for i in block:
         i = np.array(i)
@@ -34,7 +33,7 @@ def getblocks():
     return np.array(Obstacles)
 
 def getballs():
-    spheres = [[2.0,6.0,2.5,1.0],[13.0,15.0,2.0,1.0]]
+    spheres = [[2.0,6.0,2.5,1.0],[14.0,14.0,2.5,2]]
     Obstacles = []
     for i in spheres:
         Obstacles.append([j for j in i])
@@ -78,7 +77,7 @@ class obb(object):
         self.T = np.vstack([np.column_stack([self.O.T,-self.O.T@self.P]),[0,0,0,1]])
 
 class env():
-    def __init__(self, xmin=0, ymin=0, zmin=0, xmax=20, ymax=20, zmax=20, resolution=1):
+    def __init__(self, xmin=0, ymin=0, zmin=0, xmax=20, ymax=20, zmax=10, resolution=1):
     # def __init__(self, xmin=-5, ymin=0, zmin=-5, xmax=10, ymax=5, zmax=10, resolution=1):  
         self.resolution = resolution
         self.boundary = np.array([xmin, ymin, zmin, xmax, ymax, zmax]) 
@@ -88,8 +87,8 @@ class env():
         self.balls = getballs()
         self.OBB = np.array([obb([5.0,7.0,2.5],[0.5,2.0,2.5],R_matrix(135,0,0)),
                              obb([12.0,4.0,2.5],[0.5,2.0,2.5],R_matrix(45,0,0))])
-        self.start = np.array([7.0, 7.0, 0.0])
-        self.goal = np.array([12.0, 17.0, 4.0])
+        self.start = np.array([2.0, 2.0, 2.0])
+        self.goal = np.array([6.0, 16.0, 4.0])
         self.t = 0 # time 
 
     def New_block(self):
